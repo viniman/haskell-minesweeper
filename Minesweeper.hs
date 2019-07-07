@@ -52,7 +52,7 @@ data MatrixCell = MatrixCell [[Cell]] deriving(Show)
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int} deriving(Show, Eq)
 
-data Board = Board {boardCell :: [[Cell]], nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
+data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
 --data Board = Board {isMine :: [[Bool]], stateCell :: [[StateCell]], neighborsMines :: [[Int]], nRows :: Int, nColumns :: Int, stateGame :: StateGame, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
@@ -79,7 +79,8 @@ getString str = do
 
 initBoardMinesweeper :: Int -> Int -> Int -> Board
 initBoardMinesweeper m n nMines = board
-			where board = Board [[Cell False Closed 0]] m n InGame 0 0 0 0 --(truncate (m * n)) (truncate (m * n*0.4)) 0 0 -- Cell --[[State Closed]] 4 4
+                where board = Board cells m n InGame 0 0 0 0 --(truncate (m * n)) (truncate (m * n*0.4)) 0 0 -- Cell --[[State Closed]] 4 4
+                      cells = initCells 4 4 4 4
 				--sizeBoard = m * n
 		        --nMines = truncate (sizeBoard  0.4)
 				--cells = [[Cell False Closed 0]]
@@ -98,13 +99,16 @@ initCells m n numMines numCells = MatrixCell $ foldr appendRow [] [0..m-1]
                                   where appendRow i acc = (foldr (appendCell i) [] [0..n-1]) : acc
                                         appendCell i j acc = (newCell i j) : acc
                                         newCell i j = Cell False Closed 0
+                                        --newCell i j = Cell isMine Closed $ neighborsMines numMines numCells
+                                        --neighborsMines mines cells = $ shuffle [0..cells-1]
+                                        --isMine
 
 
 {-initCells :: Int -> Int -> Int -> Int -> [[Cell isMine stateCell countNeighborhoodMines]]
 initCells m n numMines numCells = [[Cell False Closed 0]]-}
 
 printBoardMatrix :: Board -> IO()
-printBoardMatrix (Board ([[Cell isMine stateCell countNeighborhoodMines]]) numRows numColumns _ _ _ _ _)
+printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
 	| numRows == 4 = putStrLn "Estamos indo bem"
 	| otherwise = putStrLn "bem mesmo"
 
@@ -124,7 +128,7 @@ printBoardMatrix (Board ([[Cell isMine stateCell countNeighborhoodMines]]) numRo
 --			where l = Board [[False]] [[Closed]] [[0]] m n InGame nMines 0 0 -- Cell --[[State Closed]] 4 4
 
 test :: Board -> IO() --[[Bool]] -> [[StateCell]] -> [[Int]] -> Int -> Int -> StateGame -> Int -> Int -> Int -> IO()
-test (Board ([[Cell _ _ _]]) nRows nColumns _ _ _ _ _)
+test (Board matrixCell nRows nColumns _ _ _ _ _)
 	| nRows == 4 = putStrLn "OLA"
 
 {-
@@ -249,8 +253,8 @@ test dados
 pos :: Int -> Int -> Pos
 pos i j = (Pos i j)
 
-getCell :: Board -> Int -> Int -> Cell
-getCell (Board (cell) _ _ _ _ _ _ _)  i j = (cell !! i) !! j
+getCell :: MatrixCell -> Int -> Int -> Cell
+getCell (MatrixCell xss) i j = (xss !! i) !! j
 
 
 
