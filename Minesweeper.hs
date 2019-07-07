@@ -15,6 +15,10 @@ import System.Random
 import Data.Array.IO
 import Control.Monad
 
+--import System.Random (RandomGen)
+import Data.Char (intToDigit)
+--import Data.Set (Set, member)
+
 shuffle :: [a] -> IO [a]
 shuffle xs = do
         ar <- newArray n xs
@@ -50,6 +54,7 @@ member x = maybe False (const True) . find (== x)
 -- https://stackoverflow.com/questions/22151625/using-defined-data-types-in-other-data-types
 -- https://stackoverflow.com/questions/12860798/haskell-how-to-create-a-matrix
 -- http://openhaskell.com/lectures/adts.html
+-- http://zvon.org/other/haskell/Outputchar/intToDigit_f.html
 
 
 --data Closed = 1
@@ -75,7 +80,7 @@ data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
 
 -- data Board = BoardCell [[Cell]] Int Int | StateBoard StateGame | NumBombs Int | OpenedCells Int | MarkedPositions Int deriving(Show)
 
-data MatrixCell = MatrixCell [[Cell]] deriving(Show)
+data MatrixCell = MatrixCell [[Cell]] --deriving(Show)
 
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int} deriving(Show, Eq)
@@ -150,15 +155,50 @@ isMineFromList idCell listOfMines
 initCells m n numMines numCells = [[Cell False Closed 0]]-}
 
 
+cellToChar :: Cell -> Char
+cellToChar (Cell _ stateCell neighborsMines)
+    | stateCell == Closed = '*'
+    | stateCell == Marked = 'B'
+    | stateCell == Opened = (intToDigit neighborsMines)
+
+{-
+cellToChar c b = intToDigit $ foldr increaseIfMine 0 (neighbors c b)
+                 where increaseIfMine = \x acc -> if (isMine x)
+                                                  then acc + 1
+                                                  else acc
+-}
+showRow :: MatrixCell -> [Cell] -> String -> String
+showRow b (c:cs) s = s ++ rowNumber ++ "  " ++ showCells ++ "\n"
+                      where rowNumber = "1"--[row $ position c]
+                            showCells = foldl showCell "" (c:cs)
+                            showCell = \acc c -> acc ++ [cellToChar c] ++ " "
 
 printBoardMatrix :: Board -> IO()
 printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
     | numRows == 4 = putStrLn "Estamos indo bem"
     | otherwise = putStrLn "bem mesmo"
 
+instance Show MatrixCell where
+    show (MatrixCell matrix) = showRows ++ "\n    " ++ enumerate ++ "\n\n"
+                               where showRows = foldr (showRow $ MatrixCell matrix) "" matrix
+                                     enumerate = foldr (\x acc -> x:' ':acc) "" letters
+                                     letters = take numberOfColumns ['A'..]
+                                     numberOfColumns = length $ head matrix
 
+{-		putStrLn ("\n" ++ "                              " ++
+		(show (tabela !! (0*n+0))) ++ " | " ++ (show (tabela !! (0*n+1))) ++ " | " ++ (show (tabela !! (0*n+2))) ++
+		"\n                              ---------------\n" ++ "                              " ++
+		(show (tabela !! (1*n+0))) ++ " | " ++ (show (tabela !! (1*n+1))) ++ " | " ++ (show (tabela !! (1*n+2))) ++
+		"\n                              ---------------\n" ++ "                              " ++
+		(show (tabela !! (2*n+0))) ++ " | " ++ (show (tabela !! (2*n+1))) ++ " | " ++ (show (tabela !! (2*n+2))) ++
+		"\n")-}
 
-
+{-processInput :: String -> Board -> String--Board
+processInput ('+':j:i:"") b = "Marcar i j"--checkCellOnBoard b (Position i j)
+processInput ('-':j:i:"") b = "Desmarcar i j"uncheckCellOnBoard b (Position i j)
+processInput (j:i:"") b = "abrir i j"openCellOnBoard b (Position i j)
+processInput _ b = b
+-}
 
 --test
 --initBoardMinesweeper :: Int -> Int -> Int -> Board
@@ -261,8 +301,9 @@ main = do
     --boardGame <- Board
 
 
-    let boardGame = initBoardMinesweeper m n 6 --round m*n*0.4 --$ truncate (m*n*0.4)
+    let boardGame = initBoardMinesweeper m n 6  --round m*n*0.4 --$ truncate (m*n*0.4)
     print boardGame
+    -- putStrLn $ show boardGame
     test boardGame
     return ()
 
@@ -295,6 +336,9 @@ pos i j = (Pos i j)
 
 getCell :: MatrixCell -> Int -> Int -> Cell
 getCell (MatrixCell xss) i j = (xss !! i) !! j
+
+getMatrixCells :: Board -> MatrixCell
+getMatrixCells (Board matrixCell _ _ _ _ _ _ _) = matrixCell
 
 
 
