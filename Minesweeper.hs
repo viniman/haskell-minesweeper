@@ -37,7 +37,19 @@ member x = maybe False (const True) . find (== x)
 
 -- References
 -- http://learnyouahaskell.com/making-our-own-types-and-typeclasses
+-- https://hackage.haskell.org/package/CheatSheet-1.11/src/CheatSheet.pdf
 -- https://stackoverflow.com/questions/6000511/better-way-to-define-an-enum-in-haskell
+-- https://stackoverflow.com/questions/4846974/haskell-check-if-int-is-in-a-list-of-ints
+-- https://hoogle.haskell.org/?hoogle=IO%20a%20-%3E%20a
+-- https://hackage.haskell.org/package/base-4.12.0.0/docs/Foreign-Marshal-Unsafe.html#v:unsafeLocalState
+-- https://wiki.haskell.org/Random_shuffle
+-- https://wiki.haskell.org/Converting_numbers
+-- https://hackage.haskell.org/package/base-4.8.1.0/docs/Prelude.html#v:truncate
+-- https://stackoverflow.com/questions/940382/what-is-the-difference-between-dot-and-dollar-sign
+-- https://stackoverflow.com/questions/8529814/get-a-sublist-in-haskell
+-- https://stackoverflow.com/questions/22151625/using-defined-data-types-in-other-data-types
+-- https://stackoverflow.com/questions/12860798/haskell-how-to-create-a-matrix
+-- http://openhaskell.com/lectures/adts.html
 
 
 --data Closed = 1
@@ -45,6 +57,15 @@ member x = maybe False (const True) . find (== x)
 --data Marked = 3
 
 -- data Board = Board [[Cell]]
+
+data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
+
+{-numMinesCalculate :: Dificulty -> Int -> Num
+numMinesCalculate dificulty numCells
+	| dificulty == Easy = (truncate (numCells*10*0.2))
+	| dificulty == Medium = (truncate (numCells*10*0.4))
+	| dificulty == Hard = (truncate (numCells*10*0.55))
+-}
 
 data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
 
@@ -128,17 +149,13 @@ isMineFromList idCell listOfMines
 {-initCells :: Int -> Int -> Int -> Int -> [[Cell isMine stateCell countNeighborhoodMines]]
 initCells m n numMines numCells = [[Cell False Closed 0]]-}
 
+
+
 printBoardMatrix :: Board -> IO()
 printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
     | numRows == 4 = putStrLn "Estamos indo bem"
     | otherwise = putStrLn "bem mesmo"
 
-{-
-printBoardMatrix :: Board -> IO()
-printBoardMatrix (Board ([[Cell isMine stateCell countNeighborhoodMines]]) numRows numColumns _ _ _ _)
-    | numRows == 4 = putStrLn "Estamos indo bem"
-    | otherwise = putStrLn "bem mesmo"
--}
 
 
 
@@ -227,6 +244,8 @@ main = do
     --test "ola"
     let m = 4
     let n = 4
+    let numCells = 4*4
+    --let numMines = numMinesCalculate Easy numCells
     --test1 "ola"
     --op <- getChar --sizeBoard
     --test op
@@ -242,7 +261,7 @@ main = do
     --boardGame <- Board
 
 
-    let boardGame = initBoardMinesweeper m n 4 --round m*n*0.4
+    let boardGame = initBoardMinesweeper m n 6 --round m*n*0.4 --$ truncate (m*n*0.4)
     print boardGame
     test boardGame
     return ()
