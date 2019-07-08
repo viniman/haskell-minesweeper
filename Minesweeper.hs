@@ -76,30 +76,12 @@ data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
 
 data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
 
--- data Cell = IsBomb Bool | State StateCell | CountNeighborhoodMines Int deriving(Show)--deriving(Show, Eq)
-
--- data Board = BoardCell [[Cell]] Int Int | StateBoard StateGame | NumBombs Int | OpenedCells Int | MarkedPositions Int deriving(Show)
-
 data MatrixCell = MatrixCell [[Cell]] --deriving(Show)
 
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int} deriving(Show, Eq)
 
-data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} --deriving(Show)
-
---data Board = Board {isMine :: [[Bool]], stateCell :: [[StateCell]], neighborsMines :: [[Int]], nRows :: Int, nColumns :: Int, stateGame :: StateGame, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
-
-
-testBool :: Bool -> String
-testBool booleano
-    | booleano = "Verdadeiro"
-    | otherwise = "Falso"
-
-testStateCell :: StateCell -> String
-testStateCell chave
-    | chave == Closed = "Fechado"
-    | chave == Opened = "Aberto"
-    | otherwise = "Marcado"
+data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
 
 
@@ -114,18 +96,7 @@ initBoardMinesweeper :: Int -> Int -> Int -> Board
 initBoardMinesweeper m n nMines = board
                 where board = Board cells m n InGame (m*n) nMines 0 0 --(truncate (m * n)) (truncate (m * n*0.4)) 0 0 -- Cell --[[State Closed]] 4 4
                       cells = initCells m n nMines
-                --sizeBoard = m * n
-                --nMines = truncate (sizeBoard  0.4)
-                --cells = [[Cell False Closed 0]]
-                {-
-                appendRow i acc = (foldr (appendCell i) [] [0 .. cols-1]) : acc
-                  appendCell i j acc = (newCell i j) : acc
-                newCell i j = Untouched (newCellPosition i j) (isMine i j)
-                newCellPosition i j = Position (rowToChar i) (columnToChar j)
-                isMine i j = member (i*cols + j) minePositions
-                minePositions = generateNRandomNumbers (0, totalCells - 1) (min (max mines 1) maxMines) g
-                sizeBoard = m * n
-                maxMines = truncate (sizeBoard  0.4)-}
+
 
 initCells :: Int -> Int -> Int -> MatrixCell
 initCells m n numMines = MatrixCell $ foldr appendRow [] [0..m-1]
@@ -154,9 +125,10 @@ isMineFromList idCell listOfMines
 
 
 cellToChar :: Cell -> Char
-cellToChar (Cell _ stateCell neighborsMines)
+cellToChar (Cell isMine stateCell neighborsMines)
     | stateCell == Closed = '*'
     | stateCell == Marked = 'B'
+    | stateCell == Opened && isMine = 'B'
     | stateCell == Opened = (intToDigit neighborsMines)
 
 
@@ -178,13 +150,6 @@ instance Show MatrixCell where
                                      enumerate = foldr (\x acc -> x:' ':acc) "" letters
                                      letters = take numberOfColumns ['A'..]
                                      numberOfColumns = length $ head matrix
-
-
-{-
-test :: Board -> IO() --[[Bool]] -> [[StateCell]] -> [[Int]] -> Int -> Int -> StateGame -> Int -> Int -> Int -> IO()
-test (Board matrixCell nRows nColumns _ _ _ _ _)
-    | nRows == 4 = putStrLn "OLA"-}
-
 
 
 data Matrix a = Matrix [[a]]
@@ -222,34 +187,8 @@ main = do
     putStrLn "     - Para desmarcar como mina a linha 2 coluna 2, informe \'-22\'"
     putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
     putStrLn "---------------------------------- Campo Minado ----------------------------------\n"
-    --test "ola"
-    --let m = 4
-    --let n = 4
-    --let numCells = 4*4
 
-    --runGame boardGame
-
-
-    --let numMines = numMinesCalculate Easy numCells
-    --test1 "ola"
-    --op <- getChar --sizeBoard
-    --test op
-    -- BOARD INIT
-    --getChar -- descarta o Enter
-    --executarOpcao dados op -> init game
-    --dowhile
-    --testStateCell Closed
-    --runGame
-    
-    --if(line == "carlos") then do
-    --boardGame <- Board
-
-
-    --let boardGame = initBoardMinesweeper m n 6  --round m*n*0.4 --$ truncate (m*n*0.4)
-    --print boardGame
-    -- putStrLn $ show boardGame
-    --test boardGame
-    --putStrLn show boardGame
+    putStrLn $ show (matrixCell boardGame)
     runGame boardGame
     return ()
 
@@ -258,7 +197,7 @@ runGame :: Board -> IO()
 runGame boardGame = do
     inputCommand <- getString "Informe o comando da sua jogada: "
     --putStrLn inputCommand
-    let newBoardGame = makeCommandInBoard inputCommand boardGame
+    let newBoardGame = winGameTest $ makeCommandInBoard inputCommand boardGame
     let stateGame = getStateGame newBoardGame
     if(stateGame == InGame)
     then (do putStrLn $ "Número de marcações feitas: " ++ show (markedPositions newBoardGame)
@@ -282,19 +221,29 @@ runGame boardGame = do
 
 
 openCellCommand :: Board -> Int -> Int -> Board
-openCellCommand boardGame i j = replaceCell boardGame newCell i j
+openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
                             where newCell = openCell $ getCell (matrixCell boardGame) i j
 
 
 markCellCommand :: Board -> Int -> Int -> Board
 markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boardGame))
-	                            then replaceCell boardGame newCell i j
+	                            then replaceCell (addMarkPosition boardGame) newCell i j
 	                            else boardGame
 	                            where newCell = markCell $ getCell (matrixCell boardGame) i j
 
 unmarkCellCommand :: Board -> Int -> Int -> Board
-unmarkCellCommand boardGame i j = replaceCell boardGame newCell i j 
+unmarkCellCommand boardGame i j = replaceCell (removeMarkPosition boardGame) newCell i j 
                             where newCell = unmarkCell $ getCell (matrixCell boardGame) i j
+
+addMarkPosition :: Board -> Board
+addMarkPosition (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8+1)
+
+removeMarkPosition :: Board -> Board
+removeMarkPosition (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8-1)
+
+addOpenedCell :: Board -> Board
+addOpenedCell (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8+1)
+
 
 openCell :: Cell -> Cell
 openCell (Cell isMine stateCell neighborsMines)
@@ -315,7 +264,10 @@ unmarkCell (Cell isMine stateCell neighborsMines)
 makeCommandInBoard :: String -> Board -> Board
 makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame (read [i]) (read [j])
 makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame (read [i]) (read [j])
-makeCommandInBoard (j:i:"") boardGame = openCellCommand boardGame (read [i]) (read [j])
+makeCommandInBoard (j:i:"") boardGame = if(stateGame newBoardGame == GameOver )
+	                                    then newBoardGame
+	                                    else openCellCommand boardGame (read [i]) (read [j])
+                                      where newBoardGame = (gameOverTest boardGame (read [i]) (read [j]))
 makeCommandInBoard _ boardGame = boardGame
 
 getStateGame :: Board -> StateGame
@@ -340,4 +292,18 @@ replaceCell (Board (MatrixCell css) a b c d e f g) cell i j = Board (MatrixCell 
                            where newRow = replaceCellInRow (css !! i) cell j
 
 
+gameOverTest :: Board -> Int -> Int -> Board
+gameOverTest (Board matrixCell m n stateGame a b c d) i j = if(isMine $ getCell matrixCell i j)
+                             then (Board matrixCell m n GameOver a b c d)
+                             else (Board matrixCell m n stateGame a b c d)
 
+-- () retorno void
+winGameTest :: Board -> Board
+winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPositions) = 
+    if (openedCells+numMines == sizeBoard) 
+    then Board cells m n Win sizeBoard numMines openedCells markedPositions
+    else Board cells m n stateCell sizeBoard numMines openedCells markedPositions
+
+
+
+-- openAllMines
