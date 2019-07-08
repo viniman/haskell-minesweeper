@@ -13,6 +13,10 @@ import Data.List
 import Data.Function
 import Data.Array
 -}
+
+import Graphics.UI.Gtk -- gtk2hs
+import Data.IORef -- gtk2hs
+
 import Data.List
 
 import Foreign.Marshal.Unsafe
@@ -22,7 +26,7 @@ import Data.Array.IO
 import Control.Monad
 
 --import System.Random (RandomGen)
-import Data.Char (intToDigit)
+import Data.Char (intToDigit, isDigit)
 --import Data.Set (Set, member)
 
 shuffle :: [a] -> IO [a]
@@ -61,6 +65,13 @@ member x = maybe False (const True) . find (== x)
 -- https://stackoverflow.com/questions/12860798/haskell-how-to-create-a-matrix
 -- http://openhaskell.com/lectures/adts.html
 -- http://zvon.org/other/haskell/Outputchar/intToDigit_f.html
+-- https://stackoverflow.com/questions/2468410/convert-string-to-integer-float-in-haskell
+-- https://pt.wikibooks.org/wiki/Haskell/Estruturas_de_controle
+-- http://haskell.tailorfontela.com.br/higher-order-functions
+-- https://www.schoolofhaskell.com/user/CKoenig/fold,%20accumulate
+-- https://www.programming-idioms.org/idiom/55/convert-integer-to-string/955/haskell
+-- https://stackoverflow.com/questions/49464632/convert-string-of-digits-to-int-in-haskell
+-- http://www.muitovar.com/gtk2hs/chap6-1.html
 
 
 data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
@@ -79,11 +90,11 @@ data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
 data MatrixCell = MatrixCell [[Cell]] --deriving(Show)
 
 -- record syntax
-data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int} deriving(Show, Eq)
+data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int, rowNumber :: Int} deriving(Show, Eq)
 
 data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
-
+data Matrix a = Matrix [[a]] deriving (Eq)
 
 getString :: String -> IO String
 getString str = do
@@ -103,7 +114,7 @@ initCells m n numMines = MatrixCell $ foldr appendRow [] [0..m-1]
                                   where appendRow i acc = (foldr (appendCell i) [] [0..n-1]) : acc
                                         appendCell i j acc = (newCell i j) : acc
                                         --newCell i j = Cell False Closed 0
-                                        newCell i j = Cell (isMine i j) Closed $ neighborsMines i j
+                                        newCell i j = Cell (isMine i j) Closed (neighborsMines i j) i
                                         neighborsMines i j = numNeighborhoodMines (i*n+j) mines n 
                                         isMine i j = member (i*n+j) mines
                                         mines = take numMines $ ioToA $ shuffle [0..(m*n-1)]
@@ -125,7 +136,7 @@ isMineFromList idCell listOfMines
 
 
 cellToChar :: Cell -> Char
-cellToChar (Cell isMine stateCell neighborsMines)
+cellToChar (Cell isMine stateCell neighborsMines _)
     | stateCell == Closed = '*'
     | stateCell == Marked = 'B'
     | stateCell == Opened && isMine = 'B'
@@ -133,11 +144,10 @@ cellToChar (Cell isMine stateCell neighborsMines)
 
 
 showRow :: MatrixCell -> [Cell] -> String -> String
-showRow b (c:cs) s = s ++ rowNumber ++ "  " ++ showCells ++ "\n"
-                      where rowNumber = "" ++ numCol --[row $ position c]
+showRow matrix (c:cs) s = s ++ show (rowNumber c) ++ "  " ++ showCells ++ "\n"
+                      where --rowNumber = "" ++ (rowNumber c) --[row $ position c]
                             showCells = foldl showCell "" (c:cs)
                             showCell = \acc c -> acc ++ [cellToChar c] ++ " "
-                            numCol = "1"
 
 {-printBoardMatrix :: Board -> IO()
 printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
@@ -147,31 +157,60 @@ printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
 instance Show MatrixCell where
     show (MatrixCell matrix) = showRows ++ "   " ++ enumerate ++ "\n\n"
                                where showRows = foldr (showRow $ MatrixCell matrix) "" matrix
-                                     enumerate = foldr (\x acc -> x:' ':acc) "" letters
+                                     enumerate = foldr (\x acc -> x:' ':acc) "\n" letters
                                      letters = take numberOfColumns ['A'..]
                                      numberOfColumns = length $ head matrix
+                                     --numbers = take numberOfRows ['1'..]
+                                     --numberOfRows = length matrix
+                                     --let numCol = 0
+                                     --numFirst = if(numFirst == "0") then "0" else sumChar numCol "1" --if(numFirst == "0")
+                                     --numCol = numFirst
+                                     --let numFirst = sumChar numFirst "1"
+                                     
 
 
-data Matrix a = Matrix [[a]]
-              deriving (Eq)
 
---type Pos = (Int,Int)
+incrementCharNumb :: [Char] -> [Char]
+incrementCharNumb "0" = "1"
+incrementCharNumb number = sumChar number "1"
+
+{-
+scanChar :: Char -> Int
+scanChar c | '0' <= c && c <= '9' = fromEnum c - fromEnum '0'
+           | otherwise = -1
+
+scanString :: String -> Int
+scanString x = if all isDigit x
+                then read x :: Int
+                else 0           
+-}
+
+sumChar :: [Char] -> [Char] -> [Char]
+sumChar str1 str2 = show ((read str1::Int) + (read str2::Int))
+
+
+
+{---type Pos = (Int,Int)
 data Pos = Pos { row :: Int, column :: Int }
+
+pos :: Int -> Int -> Pos
+pos i j = (Pos i j)
 
 instance Show a => Show (Matrix a)
   where
     show (Matrix a) = intercalate "\n" $ map (intercalate " " . map show) a
+-}
 
 main :: IO()
 main = do
     putStrLn "CAMPO MINADO"
     putStr "\ESC[2J"--  limpa a tela (dando espaço)
 
-    putStrLn "----------------- Campo Minado -------------------- Campo Minado -----------------"
-    putStrLn "Campo Minado -------------------------------------------------------- Campo Minado"
-    putStrLn "---------------------------------- Campo Minado ----------------------------------"
-    putStrLn "Campo Minado -------------------------------------------------------- Campo Minado"
-    putStrLn "----------------- Campo Minado -------------------- Campo Minado -----------------\n"
+    putStrLn "---------------- Campo Minado -------------------- Campo Minado ----------------"
+    putStrLn "Campo Minado ------------------------------------------------------ Campo Minado"
+    putStrLn "--------------------------------- Campo Minado ---------------------------------"
+    putStrLn "Campo Minado ------------------------------------------------------ Campo Minado"
+    putStrLn "---------------- Campo Minado -------------------- Campo Minado ----------------\n"
 
     m <- getString "Informe o numero de linhas do jogo: "
     n <- getString "Informe o numero de colunas do jogo: "
@@ -180,16 +219,22 @@ main = do
     let boardGame = initBoardMinesweeper numRows numCols 6  --round m*n*0.4 --$ truncate (m*n*0.4)
 
 
-    putStrLn "---------------------------------- Campo Minado ----------------------------------\n"
+    putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
     putStrLn "\nAs posições que possuem * estão fechados, ou seja, ainda nao foram abertos."
     putStrLn "\nInstrucoes de jogo:"
     putStrLn "     - Para marcar como mina a linha 1 coluna 0, informe \'+10\'"
     putStrLn "     - Para desmarcar como mina a linha 2 coluna 2, informe \'-22\'"
     putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
-    putStrLn "---------------------------------- Campo Minado ----------------------------------\n"
+    putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
 
-    putStrLn $ show (matrixCell boardGame)
-    runGame boardGame
+    if(False)
+    	then (do mainGraphicUI boardGame
+    		     --main10
+    		)
+    	else (do 
+    		putStrLn $ show (matrixCell boardGame)
+    		runGame boardGame
+    		)
     return ()
 
 
@@ -246,19 +291,19 @@ addOpenedCell (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 (v7+1) v
 
 
 openCell :: Cell -> Cell
-openCell (Cell isMine stateCell neighborsMines)
-    | stateCell == Closed = Cell isMine Opened neighborsMines
-    | otherwise = Cell isMine stateCell neighborsMines
+openCell (Cell isMine stateCell neighborsMines row)
+    | stateCell == Closed = Cell isMine Opened neighborsMines row
+    | otherwise = Cell isMine stateCell neighborsMines row
 
 markCell :: Cell -> Cell
-markCell (Cell isMine stateCell neighborsMines)
-    | stateCell == Closed = Cell isMine Marked neighborsMines
-    | otherwise = Cell isMine stateCell neighborsMines
+markCell (Cell isMine stateCell neighborsMines row)
+    | stateCell == Closed = Cell isMine Marked neighborsMines row
+    | otherwise = Cell isMine stateCell neighborsMines row
 
 unmarkCell :: Cell -> Cell
-unmarkCell (Cell isMine stateCell neighborsMines)
-    | stateCell == Marked = Cell isMine Closed neighborsMines
-    | otherwise = Cell isMine stateCell neighborsMines
+unmarkCell (Cell isMine stateCell neighborsMines row)
+    | stateCell == Marked = Cell isMine Closed neighborsMines row
+    | otherwise = Cell isMine stateCell neighborsMines row
 
 
 makeCommandInBoard :: String -> Board -> Board
@@ -272,9 +317,6 @@ makeCommandInBoard _ boardGame = boardGame
 
 getStateGame :: Board -> StateGame
 getStateGame (Board _ _ _ stateGame _ _ _ _) = stateGame
-
-pos :: Int -> Int -> Pos
-pos i j = (Pos i j)
 
 getCell :: MatrixCell -> Int -> Int -> Cell
 getCell (MatrixCell xss) i j = (xss !! i) !! j
@@ -306,7 +348,7 @@ winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPosi
 
 
 
--- openAllMines
+-- openAllMinesForShow
 
 
 
@@ -344,13 +386,18 @@ winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPosi
 --          INTERFACE GRAFICA
 ----------------------------------------------------------------------
 ---- EH ISSO QUE EU PRECISO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-{-}
-main10 :: IO ()
-main10 = do
+
+
+
+mainGraphicUI :: Board -> IO ()
+mainGraphicUI boardGame = do
      initGUI
      window <- windowNew
-     set window [ windowTitle := "Guess a Number", 
-                  windowDefaultWidth := 500, windowDefaultHeight := 500]
+
+     --let m = (nRows boardGame)*5
+
+     set window [ windowTitle := "Campo Minado em Haskell", 
+                  windowDefaultWidth := ((nRows boardGame)*50), windowDefaultHeight := ((nColumns boardGame)*50+60)]
      mb <- vBoxNew False 0
      containerAdd window mb
 
@@ -362,11 +409,11 @@ main10 = do
      scrwin <- scrolledWindowNew Nothing Nothing
      boxPackStart mb scrwin PackGrow 0
 
-     table <- tableNew 10 10 True
+     table <- tableNew (nRows boardGame) (nColumns boardGame) True
      scrolledWindowAddWithViewport scrwin table
 
-     buttonlist <- sequence (map numButton [1..100])
-     let places = cross [0..9] [0..9]
+     buttonlist <- sequence (map numButton [1..(sizeBoard boardGame)])
+     let places = cross [0..(nRows boardGame)-1] [0..(nColumns boardGame)-1]
      sequence_ (zipWith (attachButton table) buttonlist places)
 
      sep2 <- hSeparatorNew
@@ -427,4 +474,47 @@ randomButton inf rst b =
 
 
 
--}
+
+
+main10 :: IO ()
+main10 = do
+     initGUI
+     window <- windowNew
+     set window [ windowTitle := "Guess a Number", 
+                  windowDefaultWidth := 500, windowDefaultHeight := 500]
+     mb <- vBoxNew False 0
+     containerAdd window mb
+
+     info <- labelNew (Just "Press \"New\" for a random number")
+     boxPackStart mb info PackNatural 7
+     sep1 <- hSeparatorNew
+     boxPackStart mb sep1 PackNatural 7
+     
+     scrwin <- scrolledWindowNew Nothing Nothing
+     boxPackStart mb scrwin PackGrow 0
+
+     table <- tableNew 10 10 True
+     scrolledWindowAddWithViewport scrwin table
+
+     buttonlist <- sequence (map numButton [1..100])
+     let places = cross [0..9] [0..9]
+     sequence_ (zipWith (attachButton table) buttonlist places)
+
+     sep2 <- hSeparatorNew
+     boxPackStart mb sep2 PackNatural 7
+     hb <- hBoxNew False 0
+     boxPackStart mb hb PackNatural 0
+     play <- buttonNewFromStock stockNew
+     quit <- buttonNewFromStock stockQuit
+     boxPackStart hb play PackNatural 0
+     boxPackEnd hb quit PackNatural 0
+     
+     randstore <- newIORef 50
+     randomButton info randstore play
+
+     sequence_ (map (actionButton info randstore) buttonlist)  
+
+     widgetShowAll window
+     onClicked quit (widgetDestroy window)
+     onDestroy window mainQuit
+     mainGUI
