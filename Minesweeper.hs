@@ -1,3 +1,9 @@
+-- Trabalho de Linguagem de Proramação
+-- Campo Minado em Haskell
+-- Vinícius Carlos de Oliveira
+-- 201635025
+
+
 {-
 import Control.Exception
 import System.IO
@@ -79,7 +85,7 @@ data MatrixCell = MatrixCell [[Cell]] --deriving(Show)
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int} deriving(Show, Eq)
 
-data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
+data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} --deriving(Show)
 
 --data Board = Board {isMine :: [[Bool]], stateCell :: [[StateCell]], neighborsMines :: [[Int]], nRows :: Int, nColumns :: Int, stateGame :: StateGame, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
@@ -156,9 +162,10 @@ cellToChar (Cell _ stateCell neighborsMines)
 
 showRow :: MatrixCell -> [Cell] -> String -> String
 showRow b (c:cs) s = s ++ rowNumber ++ "  " ++ showCells ++ "\n"
-                      where rowNumber = "\n1"--[row $ position c]
+                      where rowNumber = "" ++ numCol --[row $ position c]
                             showCells = foldl showCell "" (c:cs)
                             showCell = \acc c -> acc ++ [cellToChar c] ++ " "
+                            numCol = "1"
 
 {-printBoardMatrix :: Board -> IO()
 printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
@@ -166,7 +173,7 @@ printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
     | otherwise = putStrLn "bem mesmo"-}
 
 instance Show MatrixCell where
-    show (MatrixCell matrix) = showRows ++ "\n    " ++ enumerate ++ "\n\n"
+    show (MatrixCell matrix) = showRows ++ "   " ++ enumerate ++ "\n\n"
                                where showRows = foldr (showRow $ MatrixCell matrix) "" matrix
                                      enumerate = foldr (\x acc -> x:' ':acc) "" letters
                                      letters = take numberOfColumns ['A'..]
@@ -201,8 +208,8 @@ main = do
     putStrLn "Campo Minado -------------------------------------------------------- Campo Minado"
     putStrLn "----------------- Campo Minado -------------------- Campo Minado -----------------\n"
 
-    m <- getString "Infome o numero de linhas do jogo: "
-    n <- getString "Infome o numero de colunas do jogo: "
+    m <- getString "Informe o numero de linhas do jogo: "
+    n <- getString "Informe o numero de colunas do jogo: "
     let numRows = read n::Int
     let numCols = read m::Int
     let boardGame = initBoardMinesweeper numRows numCols 6  --round m*n*0.4 --$ truncate (m*n*0.4)
@@ -254,9 +261,11 @@ runGame boardGame = do
     let newBoardGame = makeCommandInBoard inputCommand boardGame
     let stateGame = getStateGame newBoardGame
     if(stateGame == InGame)
-    then putStrLn "Em jogo"
+    then (do putStrLn $ "Número de marcações feitas: " ++ show (markedPositions newBoardGame)
+             putStrLn $ "Restante de marcações: " ++ show  ((numMines newBoardGame)-(markedPositions newBoardGame))
+         )
     else return()
-    putStrLn $ show newBoardGame
+    putStrLn $ show (matrixCell newBoardGame)
     if(stateGame == GameOver)
         then (do
             putStrLn "Game Over! Não fique triste! Muitas vezes a vida possui revira-voltas."
@@ -272,19 +281,41 @@ runGame boardGame = do
 
 
 
-openCell :: Board -> Int -> Int -> Board
-openCell b _ _ = b
+openCellCommand :: Board -> Int -> Int -> Board
+openCellCommand boardGame i j = replaceCell boardGame newCell i j
+                            where newCell = openCell $ getCell (matrixCell boardGame) i j
 
-markCell :: Board -> Int -> Int -> Board
-markCell b _ _ = b
 
-unmarkCell :: Board -> Int -> Int -> Board
-unmarkCell b _ _ = b
+markCellCommand :: Board -> Int -> Int -> Board
+markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boardGame))
+	                            then replaceCell boardGame newCell i j
+	                            else boardGame
+	                            where newCell = markCell $ getCell (matrixCell boardGame) i j
+
+unmarkCellCommand :: Board -> Int -> Int -> Board
+unmarkCellCommand boardGame i j = replaceCell boardGame newCell i j 
+                            where newCell = unmarkCell $ getCell (matrixCell boardGame) i j
+
+openCell :: Cell -> Cell
+openCell (Cell isMine stateCell neighborsMines)
+    | stateCell == Closed = Cell isMine Opened neighborsMines
+    | otherwise = Cell isMine stateCell neighborsMines
+
+markCell :: Cell -> Cell
+markCell (Cell isMine stateCell neighborsMines)
+    | stateCell == Closed = Cell isMine Marked neighborsMines
+    | otherwise = Cell isMine stateCell neighborsMines
+
+unmarkCell :: Cell -> Cell
+unmarkCell (Cell isMine stateCell neighborsMines)
+    | stateCell == Marked = Cell isMine Closed neighborsMines
+    | otherwise = Cell isMine stateCell neighborsMines
+
 
 makeCommandInBoard :: String -> Board -> Board
-makeCommandInBoard ('+':j:i:"") boardGame = markCell boardGame (read [i]) (read [j])
-makeCommandInBoard ('-':j:i:"") boardGame = unmarkCell boardGame (read [i]) (read [j])
-makeCommandInBoard (j:i:"") boardGame = openCell boardGame (read [i]) (read [j])
+makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame (read [i]) (read [j])
+makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame (read [i]) (read [j])
+makeCommandInBoard (j:i:"") boardGame = openCellCommand boardGame (read [i]) (read [j])
 makeCommandInBoard _ boardGame = boardGame
 
 getStateGame :: Board -> StateGame
@@ -298,3 +329,15 @@ getCell (MatrixCell xss) i j = (xss !! i) !! j
 
 getMatrixCells :: Board -> MatrixCell
 getMatrixCells (Board matrixCell _ _ _ _ _ _ _) = matrixCell
+
+
+replaceCellInRow :: [Cell] -> Cell -> Int -> [Cell]
+replaceCellInRow cs c j = (take columnIndex cs) ++ (c : drop (columnIndex + 1) cs)
+                        where columnIndex = j--charToColumn $ column (position c)
+
+replaceCell :: Board -> Cell -> Int -> Int -> Board
+replaceCell (Board (MatrixCell css) a b c d e f g) cell i j = Board (MatrixCell $ (take i css) ++ (newRow : (drop (i + 1) css))) a b c d e f g
+                           where newRow = replaceCellInRow (css !! i) cell j
+
+
+
