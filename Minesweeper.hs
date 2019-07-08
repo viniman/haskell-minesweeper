@@ -242,7 +242,7 @@ removeMarkPosition :: Board -> Board
 removeMarkPosition (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8-1)
 
 addOpenedCell :: Board -> Board
-addOpenedCell (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8+1)
+addOpenedCell (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 (v7+1) v8
 
 
 openCell :: Cell -> Cell
