@@ -57,19 +57,13 @@ member x = maybe False (const True) . find (== x)
 -- http://zvon.org/other/haskell/Outputchar/intToDigit_f.html
 
 
---data Closed = 1
---data Opened = 2
---data Marked = 3
-
--- data Board = Board [[Cell]]
-
 data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
 
 {-numMinesCalculate :: Dificulty -> Int -> Num
 numMinesCalculate dificulty numCells
-	| dificulty == Easy = (truncate (numCells*10*0.2))
-	| dificulty == Medium = (truncate (numCells*10*0.4))
-	| dificulty == Hard = (truncate (numCells*10*0.55))
+    | dificulty == Easy = (truncate (numCells*10*0.2))
+    | dificulty == Medium = (truncate (numCells*10*0.4))
+    | dificulty == Hard = (truncate (numCells*10*0.55))
 -}
 
 data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
@@ -151,8 +145,6 @@ isMineFromList idCell listOfMines
     | member idCell listOfMines = 1
     | otherwise = 0
 
-{-initCells :: Int -> Int -> Int -> Int -> [[Cell isMine stateCell countNeighborhoodMines]]
-initCells m n numMines numCells = [[Cell False Closed 0]]-}
 
 
 cellToChar :: Cell -> Char
@@ -161,22 +153,17 @@ cellToChar (Cell _ stateCell neighborsMines)
     | stateCell == Marked = 'B'
     | stateCell == Opened = (intToDigit neighborsMines)
 
-{-
-cellToChar c b = intToDigit $ foldr increaseIfMine 0 (neighbors c b)
-                 where increaseIfMine = \x acc -> if (isMine x)
-                                                  then acc + 1
-                                                  else acc
--}
+
 showRow :: MatrixCell -> [Cell] -> String -> String
 showRow b (c:cs) s = s ++ rowNumber ++ "  " ++ showCells ++ "\n"
-                      where rowNumber = "1"--[row $ position c]
+                      where rowNumber = "\n1"--[row $ position c]
                             showCells = foldl showCell "" (c:cs)
                             showCell = \acc c -> acc ++ [cellToChar c] ++ " "
 
-printBoardMatrix :: Board -> IO()
+{-printBoardMatrix :: Board -> IO()
 printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
     | numRows == 4 = putStrLn "Estamos indo bem"
-    | otherwise = putStrLn "bem mesmo"
+    | otherwise = putStrLn "bem mesmo"-}
 
 instance Show MatrixCell where
     show (MatrixCell matrix) = showRows ++ "\n    " ++ enumerate ++ "\n\n"
@@ -185,79 +172,11 @@ instance Show MatrixCell where
                                      letters = take numberOfColumns ['A'..]
                                      numberOfColumns = length $ head matrix
 
-{-		putStrLn ("\n" ++ "                              " ++
-		(show (tabela !! (0*n+0))) ++ " | " ++ (show (tabela !! (0*n+1))) ++ " | " ++ (show (tabela !! (0*n+2))) ++
-		"\n                              ---------------\n" ++ "                              " ++
-		(show (tabela !! (1*n+0))) ++ " | " ++ (show (tabela !! (1*n+1))) ++ " | " ++ (show (tabela !! (1*n+2))) ++
-		"\n                              ---------------\n" ++ "                              " ++
-		(show (tabela !! (2*n+0))) ++ " | " ++ (show (tabela !! (2*n+1))) ++ " | " ++ (show (tabela !! (2*n+2))) ++
-		"\n")-}
 
-{-processInput :: String -> Board -> String--Board
-processInput ('+':j:i:"") b = "Marcar i j"--checkCellOnBoard b (Position i j)
-processInput ('-':j:i:"") b = "Desmarcar i j"uncheckCellOnBoard b (Position i j)
-processInput (j:i:"") b = "abrir i j"openCellOnBoard b (Position i j)
-processInput _ b = b
--}
-
---test
---initBoardMinesweeper :: Int -> Int -> Int -> Board
---initBoardMinesweeper m n nMines = l
---            where l = Board [[False]] [[Closed]] [[0]] m n InGame nMines 0 0 -- Cell --[[State Closed]] 4 4
-
+{-
 test :: Board -> IO() --[[Bool]] -> [[StateCell]] -> [[Int]] -> Int -> Int -> StateGame -> Int -> Int -> Int -> IO()
 test (Board matrixCell nRows nColumns _ _ _ _ _)
-    | nRows == 4 = putStrLn "OLA"
-
-{-
-printBoardMatrix :: Board -> IO()
-printBoardMatrix b = let putStrLn "bem mesmo"--s neighbors numRows numColumns _ _ _ _
-    --| numRows == 4 = putStrLn "Estamos indo bem"
-    --| otherwise = putStrLn "bem mesmo"
-
--}
-
-{-
-import Data.Char (intToDigit)
-
-cellToChar :: Cell -> Board -> Char
-cellToChar (Untouched _ _) _ = '*'
-cellToChar (Checked _ _) _ = 'B'
-cellToChar (Opened _ True) _ = 'B'
-cellToChar c b = intToDigit $ foldr increaseIfMine 0 (neighbors c b)
-                 where increaseIfMine = \x acc -> if (isMine x)
-                                                  then acc + 1
-                                                  else acc
-
-showRow :: Board -> [Cell] -> String -> String
-showRow b (c:cs) s = s ++ rowNumber ++ "  " ++ showCells ++ "\n"
-                      where rowNumber = [row $ position c]
-                            showCells = foldl showCell "" (c:cs)
-                            showCell = \acc c -> acc ++ [cellToChar c b] ++ " "
-
-instance Show Board where
-  show (Board xss) = showRows ++ "\n   " ++ enumerate ++ "\n\n"
-                     where showRows = foldr (showRow $ Board xss) "" xss
-                           enumerate = foldr (\x acc -> x:' ':acc) "" letters
-                           letters = take numberOfColumns ['A'..]
-                           numberOfColumns = length $ head xss
--}
-
-{-
-printBoardMatrix :: Board -> IO()
-printBoardMatrix (BoardCell [[State Closed]] rows cols)--boardMinesweeperGame
-    | rows == 4 = putStrLn "Estamos indo bem"
-
-
-
-surface :: Shape -> Float  
-surface (Circle _ r) = pi * r ^ 2  
-surface (Rectangle (Point x1 y1) (Point x2 y2)) = (abs $ x2 - x1) * (abs $ y2 - y1)  
-
-printTabuleiro :: Tabela -> Int -> Int -> Int -> Int -> IO ()
-printTabuleiroAux tabela m n i j
-    | j == n = putStrLn (tabela !! (0*n+0))
--}
+    | nRows == 4 = putStrLn "OLA"-}
 
 
 
@@ -275,16 +194,35 @@ main :: IO()
 main = do
     putStrLn "CAMPO MINADO"
     putStr "\ESC[2J"--  limpa a tela (dando espaço)
-    putStrLn "-------------------------------- Campo Minado --------------------------------"
+
+    putStrLn "----------------- Campo Minado -------------------- Campo Minado -----------------"
+    putStrLn "Campo Minado -------------------------------------------------------- Campo Minado"
+    putStrLn "---------------------------------- Campo Minado ----------------------------------"
+    putStrLn "Campo Minado -------------------------------------------------------- Campo Minado"
+    putStrLn "----------------- Campo Minado -------------------- Campo Minado -----------------\n"
+
+    m <- getString "Infome o numero de linhas do jogo: "
+    n <- getString "Infome o numero de colunas do jogo: "
+    let numRows = read n::Int
+    let numCols = read m::Int
+    let boardGame = initBoardMinesweeper numRows numCols 6  --round m*n*0.4 --$ truncate (m*n*0.4)
+
+
+    putStrLn "---------------------------------- Campo Minado ----------------------------------\n"
+    putStrLn "\nAs posições que possuem * estão fechados, ou seja, ainda nao foram abertos."
     putStrLn "\nInstrucoes de jogo:"
-    putStrLn "Para marcar como mina a linha 1 coluna 0, informe \'+10\'"
-    putStrLn "Para desmarcar como mina a linha 2 coluna 2, informe \'-22\'"
-    putStrLn "Para abrir posição da linha 2 coluna 0, informe \'20\'"
-    putStr "Informe o tamanho do tabuleiro: "
+    putStrLn "     - Para marcar como mina a linha 1 coluna 0, informe \'+10\'"
+    putStrLn "     - Para desmarcar como mina a linha 2 coluna 2, informe \'-22\'"
+    putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
+    putStrLn "---------------------------------- Campo Minado ----------------------------------\n"
     --test "ola"
-    let m = 4
-    let n = 4
-    let numCells = 4*4
+    --let m = 4
+    --let n = 4
+    --let numCells = 4*4
+
+    --runGame boardGame
+
+
     --let numMines = numMinesCalculate Easy numCells
     --test1 "ola"
     --op <- getChar --sizeBoard
@@ -295,41 +233,62 @@ main = do
     --dowhile
     --testStateCell Closed
     --runGame
-    --line <- getString "digite seu nome "
-    --putStrLn line
+    
     --if(line == "carlos") then do
     --boardGame <- Board
 
 
-    let boardGame = initBoardMinesweeper m n 6  --round m*n*0.4 --$ truncate (m*n*0.4)
-    print boardGame
+    --let boardGame = initBoardMinesweeper m n 6  --round m*n*0.4 --$ truncate (m*n*0.4)
+    --print boardGame
     -- putStrLn $ show boardGame
-    test boardGame
+    --test boardGame
+    --putStrLn show boardGame
+    runGame boardGame
     return ()
 
-testaStringIgual :: String -> String -> Bool
-testaStringIgual str1 str2
-    | (str1 == str2) = True
-    | otherwise = False
 
---IOToString :: IO String ->String
---IOToString str
+runGame :: Board -> IO()
+runGame boardGame = do
+    inputCommand <- getString "Informe o comando da sua jogada: "
+    --putStrLn inputCommand
+    let newBoardGame = makeCommandInBoard inputCommand boardGame
+    let stateGame = getStateGame newBoardGame
+    if(stateGame == InGame)
+    then putStrLn "Em jogo"
+    else return()
+    putStrLn $ show newBoardGame
+    if(stateGame == GameOver)
+        then (do
+            putStrLn "Game Over! Não fique triste! Muitas vezes a vida possui revira-voltas."
+            return()
+            )
+    else if (stateGame == Win)
+        then (do
+            putStrLn "Você venceu! Seja Feliz! Voce venceu um jogo! Vá viver."
+            return()
+            )
+        else
+            runGame newBoardGame
 
-{-test1 :: String -> IO Char
-test1 dados = do
-    op <- getChar --sizeBoard
-    test op
--}
 
-{-
-test :: String-- -> Char
-test dados
-    putStr dados
---test str
-    --| str == "fechado" = 's'
-    --| otherwise = 'n'
 
--}
+openCell :: Board -> Int -> Int -> Board
+openCell b _ _ = b
+
+markCell :: Board -> Int -> Int -> Board
+markCell b _ _ = b
+
+unmarkCell :: Board -> Int -> Int -> Board
+unmarkCell b _ _ = b
+
+makeCommandInBoard :: String -> Board -> Board
+makeCommandInBoard ('+':j:i:"") boardGame = markCell boardGame (read [i]) (read [j])
+makeCommandInBoard ('-':j:i:"") boardGame = unmarkCell boardGame (read [i]) (read [j])
+makeCommandInBoard (j:i:"") boardGame = openCell boardGame (read [i]) (read [j])
+makeCommandInBoard _ boardGame = boardGame
+
+getStateGame :: Board -> StateGame
+getStateGame (Board _ _ _ stateGame _ _ _ _) = stateGame
 
 pos :: Int -> Int -> Pos
 pos i j = (Pos i j)
@@ -339,13 +298,3 @@ getCell (MatrixCell xss) i j = (xss !! i) !! j
 
 getMatrixCells :: Board -> MatrixCell
 getMatrixCells (Board matrixCell _ _ _ _ _ _ _) = matrixCell
-
-
-
-{-
-(Pos (i j)) = if i >= 0 && i < numberOfRows &&
-                                       j >= 0 && j < numberOfColumns
-                                       then (xss !! i') !! j'
-                                    where numberOfRows = length xss
-                                          numberOfColumns = length $ xss !! i'
-                                          -}              
