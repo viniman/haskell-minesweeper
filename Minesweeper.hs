@@ -110,7 +110,7 @@ initBoardMinesweeper m n nMines = board
 
 
 initCells :: Int -> Int -> Int -> MatrixCell
-initCells m n numMines = MatrixCell $ foldr appendRow [] [0..m-1]
+initCells m n numMines = MatrixCell $ foldr appendRow [] [1..m]
                                   where appendRow i acc = (foldr (appendCell i) [] [0..n-1]) : acc
                                         appendCell i j acc = (newCell i j) : acc
                                         --newCell i j = Cell False Closed 0
@@ -271,7 +271,7 @@ openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGa
 
 
 markCellCommand :: Board -> Int -> Int -> Board
-markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boardGame))
+markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boardGame) && (stateCell $ getCell (matrixCell boardGame) i j) == Closed)
 	                            then replaceCell (addMarkPosition boardGame) newCell i j
 	                            else boardGame
 	                            where newCell = markCell $ getCell (matrixCell boardGame) i j
