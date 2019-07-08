@@ -228,7 +228,7 @@ main = do
     putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
     putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
 
-    if(False)
+    if(True)
     	then (do mainGraphicUI boardGame
     		     --main10
     		)
@@ -416,7 +416,7 @@ mainGraphicUI boardGame = do
      scrolledWindowAddWithViewport scrwin table
 
      buttonlist <- sequence (map numButton [1..(sizeBoard boardGame)])
-     let places = cross [0..(nRows boardGame)-1] [0..(nColumns boardGame)-1]
+     let places = cross [1..(nRows boardGame)] [1..(nColumns boardGame)]
      sequence_ (zipWith (attachButton table) buttonlist places)
 
      sep2 <- hSeparatorNew
