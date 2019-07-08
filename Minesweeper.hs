@@ -111,13 +111,13 @@ initBoardMinesweeper m n nMines = board
 
 initCells :: Int -> Int -> Int -> MatrixCell
 initCells m n numMines = MatrixCell $ foldr appendRow [] [1..m]
-                                  where appendRow i acc = (foldr (appendCell i) [] [0..n-1]) : acc
+                                  where appendRow i acc = (foldr (appendCell i) [] [1..n]) : acc
                                         appendCell i j acc = (newCell i j) : acc
                                         --newCell i j = Cell False Closed 0
                                         newCell i j = Cell (isMine i j) Closed (neighborsMines i j) i
                                         neighborsMines i j = numNeighborhoodMines (i*n+j) mines n 
                                         isMine i j = member (i*n+j) mines
-                                        mines = take numMines $ ioToA $ shuffle [0..(m*n-1)]
+                                        mines = take numMines $ ioToA $ shuffle [1..(m*n)]
 
 numNeighborhoodMines :: Int -> [Int] -> Int -> Int
 numNeighborhoodMines idCell listOfMines numColumns = contMines idCell listOfMines numColumns
@@ -168,7 +168,8 @@ instance Show MatrixCell where
                                      --let numFirst = sumChar numFirst "1"
                                      
 
-
+letterToNumber :: Char -> Int
+letterToNumber chr = fromEnum chr - fromEnum 'A'
 
 incrementCharNumb :: [Char] -> [Char]
 incrementCharNumb "0" = "1"
@@ -263,7 +264,18 @@ runGame boardGame = do
         else
             runGame newBoardGame
 
-
+-- Trocar string para a 
+makeCommandInBoard :: String -> Board -> Board
+makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame ((read [i])-1) jj
+                                          where jj = (letterToNumber j)-1
+makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame ((read [i])-1) jj
+                                          where jj = (letterToNumber j)-1
+makeCommandInBoard (j:i:"") boardGame = if(stateGame newBoardGame == GameOver )
+	                                    then newBoardGame
+	                                    else openCellCommand boardGame ((read [i])-1) jj
+                                      where newBoardGame = (gameOverTest boardGame ((read [i])-1) jj)
+                                            jj = (letterToNumber j)
+makeCommandInBoard _ boardGame = boardGame
 
 openCellCommand :: Board -> Int -> Int -> Board
 openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
@@ -305,15 +317,6 @@ unmarkCell (Cell isMine stateCell neighborsMines row)
     | stateCell == Marked = Cell isMine Closed neighborsMines row
     | otherwise = Cell isMine stateCell neighborsMines row
 
-
-makeCommandInBoard :: String -> Board -> Board
-makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame (read [i]) (read [j])
-makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame (read [i]) (read [j])
-makeCommandInBoard (j:i:"") boardGame = if(stateGame newBoardGame == GameOver )
-	                                    then newBoardGame
-	                                    else openCellCommand boardGame (read [i]) (read [j])
-                                      where newBoardGame = (gameOverTest boardGame (read [i]) (read [j]))
-makeCommandInBoard _ boardGame = boardGame
 
 getStateGame :: Board -> StateGame
 getStateGame (Board _ _ _ stateGame _ _ _ _) = stateGame
