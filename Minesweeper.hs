@@ -19,6 +19,8 @@ import Data.IORef -- gtk2hs
 
 import Data.List
 
+import Data.Char(toUpper)
+
 import Foreign.Marshal.Unsafe
 
 import System.Random
@@ -168,8 +170,7 @@ instance Show MatrixCell where
                                      --let numFirst = sumChar numFirst "1"
                                      
 
-letterToNumber :: Char -> Int
-letterToNumber chr = fromEnum chr - fromEnum 'A'
+
 
 incrementCharNumb :: [Char] -> [Char]
 incrementCharNumb "0" = "1"
@@ -214,10 +215,16 @@ main = do
     putStrLn "---------------- Campo Minado -------------------- Campo Minado ----------------\n"
 
     m <- getString "Informe o numero de linhas do jogo: "
+    let numRows = read m::Int
+
     n <- getString "Informe o numero de colunas do jogo: "
-    let numRows = read n::Int
-    let numCols = read m::Int
-    let boardGame = initBoardMinesweeper numRows numCols 6  --round m*n*0.4 --$ truncate (m*n*0.4)
+    let numCols = read n::Int
+
+    let maxNumberMines = numCols*numRows
+    mn <- getString $ "Informe o numero de minas (deve ser entre 1 e " ++ show (quot maxNumberMines 2 ) ++ "): "
+    let numMines = read mn::Int
+
+    let boardGame = initBoardMinesweeper numRows numCols numMines  --round m*n*0.4 --$ truncate (m*n*0.4)
 
 
     putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
@@ -243,36 +250,118 @@ runGame :: Board -> IO()
 runGame boardGame = do
     inputCommand <- getString "Informe o comando da sua jogada: "
     --putStrLn inputCommand
-    let newBoardGame = winGameTest $ makeCommandInBoard inputCommand boardGame
+    let newBoardGame = winGameTest $ treatEntry inputCommand boardGame
     let stateGame = getStateGame newBoardGame
     if(stateGame == InGame)
-    then (do putStrLn $ "Número de marcações feitas: " ++ show (markedPositions newBoardGame)
+    then (do putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
+    	     putStrLn $ "Número de marcações feitas: " ++ show (markedPositions newBoardGame)
              putStrLn $ "Restante de marcações: " ++ show  ((numMines newBoardGame)-(markedPositions newBoardGame))
+             putStrLn $ "Posições abertas: " ++ show (openedCells newBoardGame) ++ "\n"
          )
     else return()
     putStrLn $ show (matrixCell newBoardGame)
     if(stateGame == GameOver)
         then (do
-            putStrLn "Game Over! Não fique triste! Muitas vezes a vida possui revira-voltas."
+            putStrLn "Game Over! Você foi explodido!"--"Game Over! Não fique triste! Muitas vezes a vida possui revira-voltas."
             return()
             )
     else if (stateGame == Win)
         then (do
-            putStrLn "Você venceu! Seja Feliz! Voce venceu um jogo! Vá viver."
+            putStrLn "Parabéns! Você venceu!"--Você venceu! Seja Feliz! Voce venceu um jogo! Vá viver."
             return()
             )
         else
             runGame newBoardGame
 
+--validateNumIntoChar :: String -> Bool
+
+--validatePosition :: Board -> Int -> Int
+
+
+-- Função que converte um Int de 0 a 9 para Char
+numberToLetter :: Int -> Char
+numberToLetter num = toEnum (num+fromEnum '0')::Char 
+
+-- Função que converte um Char de 0 a 9 para Int
+letterToNumber :: Char -> Int
+letterToNumber chr = fromEnum (toUpper chr) - fromEnum '0'
+
+
+
+-- Função que converte um Char para posição Int do campo
+letterToNumberPos :: Char -> Int
+letterToNumberPos chr = fromEnum (toUpper chr) - fromEnum 'A'
+
+-- Função que converte uma posição Int do campo para Char
+numberPosToLetter :: Int -> Char
+numberPosToLetter num = toEnum (num+fromEnum 'A')::Char 
+
+
+-- Função que faz a divisão truncada e retorna um Char correspondente
+divToChar :: Int -> Int -> Char
+divToChar x y = numberToLetter $ quot x y
+
+-- Função que faz o mod e retorna um Char correspondente
+modToChar :: Int -> Int -> Char
+modToChar x y = numberToLetter $ mod x y
+
+treatEntry :: String -> Board -> Board
+treatEntry (op:j:i:rest:"") boardGame = if(op /= '+' && op /= '-')
+                                       then boardGame
+                                     else if(toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare && rest >= '0' && rest <= rest_compare)
+                                       then makeCommandInBoard str boardGame
+                                     else boardGame
+                                        where str = [op,j,i,rest]
+                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                              i_compare = divToChar (nRows boardGame) 10
+                                              rest_compare = modToChar (nRows boardGame) 10
+
+treatEntry (op:j:i:"") boardGame = if((op == '+' || op == '-') && toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare)
+                                       then makeCommandInBoard str boardGame
+                                     else if(toUpper jj >= 'A' && toUpper jj <= j_compare && ii >= '1' && ii <= i_compare && rest >= '0' && rest <= rest_compare)
+                                       then makeCommandInBoard str boardGame
+                                     else boardGame
+                                        where str = [op,j,i]
+                                              jj = op
+                                              ii = j
+                                              rest = i
+                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                              i_compare = if((op == '+' || op == '-') && (nRows boardGame) <= 9) then intToDigit (nRows boardGame) --if(intToDigit (nRows boardGame) <= '9') intToDigit (nRows boardGame)
+                                                          else if ((op == '+' || op == '-') && (nRows boardGame) <= 9) then intToDigit (nRows boardGame)
+                                                          else if ((op == '+' || op == '-') && (nRows boardGame) > 9) then '9'
+                                                          else if((nRows boardGame) <= 9) then intToDigit (nRows boardGame)
+                                                          else divToChar (nRows boardGame) 10
+                                              rest_compare = modToChar (nRows boardGame) 10--intToDigit (nRows boardGame)
+
+treatEntry (j:i:"") boardGame = if(toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare)
+                                  then makeCommandInBoard [j,i] boardGame
+                                else boardGame
+                                  where j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                        i_compare = if((nRows boardGame) <= 9) then intToDigit (nRows boardGame)
+                                                    else '9'
+treatEntry _ boardGame = boardGame
+
+
+-- putStrLn "j " ++ show j_compare ++ " i " ++ show i_compare ++ " rest " ++ show rest_compare
+
+{-if((length str > 4) || (length str < 2))
+	                         then boardGame
+	                       else makeCommandInBoard str boardGame-}
+
 -- Trocar string para a 
 makeCommandInBoard :: String -> Board -> Board
 makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame ((read [i])-1) jj
-                                          where jj = (letterToNumber j)
+                                          where jj = (letterToNumberPos j)
 makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame ((read [i])-1) jj
-                                          where jj = (letterToNumber j)
+                                          where jj = (letterToNumberPos j)
+makeCommandInBoard ('+':j:i:rest:"") boardGame = markCellCommand boardGame ((read [i,rest])-1) jj
+                                          where jj = (letterToNumberPos j)
+makeCommandInBoard ('-':j:i:rest:"") boardGame = unmarkCellCommand boardGame ((read [i,rest])-1) jj
+                                          where jj = (letterToNumberPos j)
+makeCommandInBoard (j:i:rest:"") boardGame = openCellCommand boardGame ((read [i,rest])-1) jj
+                                          where jj = (letterToNumberPos j)
 makeCommandInBoard (j:i:"") boardGame = openCellCommand boardGame ((read [i])-1) jj
-                                        where
-                                        jj = (letterToNumber j)
+                                          where jj = (letterToNumberPos j)
 makeCommandInBoard _ boardGame = boardGame
 
 {-openCellCommand :: Board -> Int -> Int -> Board
@@ -281,8 +370,10 @@ openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGa
                                             else openCell $ oldCell i j
                                   oldCell = getCell (matrixCell boardGame) i j-}
 
+
+
 openCellCommand :: Board -> Int -> Int -> Board
-openCellCommand boardGame i j = if((stateCell $ getCell (matrixCell boardGame) i j) == Marked) then boardGame
+openCellCommand boardGame i j = if((stateCell $ getCell (matrixCell boardGame) i j) /= Closed) then boardGame
                                 else replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
                             where newCell = openCell $ oldCell
                                   oldCell = getCell (matrixCell boardGame) i j
@@ -296,8 +387,11 @@ markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boar
                                 where newCell = markCell $ getCell (matrixCell boardGame) i j
 
 unmarkCellCommand :: Board -> Int -> Int -> Board
-unmarkCellCommand boardGame i j = replaceCell (removeMarkPosition boardGame) newCell i j 
-                            where newCell = unmarkCell $ getCell (matrixCell boardGame) i j
+unmarkCellCommand boardGame i j = if(stateCell oldCell == Marked) 
+	                              then replaceCell (removeMarkPosition boardGame) newCell i j 
+	                              else boardGame
+                            where newCell = unmarkCell $ oldCell
+                                  oldCell = getCell (matrixCell boardGame) i j
 
 addMarkPosition :: Board -> Board
 addMarkPosition (Board v1 v2 v3 v4 v5 v6 v7 v8) = Board v1 v2 v3 v4 v5 v6 v7 (v8+1)
