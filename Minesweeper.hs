@@ -94,7 +94,7 @@ data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines
 
 data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
-data Matrix a = Matrix [[a]] deriving (Eq)
+--data Matrix a = Matrix [[a]] deriving (Eq)
 
 getString :: String -> IO String
 getString str = do
@@ -115,8 +115,8 @@ initCells m n numMines = MatrixCell $ foldr appendRow [] [1..m]
                                         appendCell i j acc = (newCell i j) : acc
                                         --newCell i j = Cell False Closed 0
                                         newCell i j = Cell (isMine i j) Closed (neighborsMines i j) i
-                                        neighborsMines i j = numNeighborhoodMines (i*n+j) mines n 
-                                        isMine i j = member (i*n+j) mines
+                                        neighborsMines i j = numNeighborhoodMines (i*n+j-n) mines n 
+                                        isMine i j = member (i*n+j-n) mines
                                         mines = take numMines $ ioToA $ shuffle [1..(m*n)]
 
 numNeighborhoodMines :: Int -> [Int] -> Int -> Int
@@ -228,14 +228,14 @@ main = do
     putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
     putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
 
-    if(True)
-    	then (do mainGraphicUI boardGame
-    		     --main10
-    		)
-    	else (do 
-    		putStrLn $ show (matrixCell boardGame)
-    		runGame boardGame
-    		)
+    if(False)
+        then (do mainGraphicUI boardGame
+                 --main10
+            )
+        else (do 
+            putStrLn $ show (matrixCell boardGame)
+            runGame boardGame
+            )
     return ()
 
 
@@ -267,12 +267,12 @@ runGame boardGame = do
 -- Trocar string para a 
 makeCommandInBoard :: String -> Board -> Board
 makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame ((read [i])-1) jj
-                                          where jj = (letterToNumber j)-1
+                                          where jj = (letterToNumber j)
 makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame ((read [i])-1) jj
-                                          where jj = (letterToNumber j)-1
+                                          where jj = (letterToNumber j)
 makeCommandInBoard (j:i:"") boardGame = if(stateGame newBoardGame == GameOver )
-	                                    then newBoardGame
-	                                    else openCellCommand boardGame ((read [i])-1) jj
+                                        then newBoardGame
+                                        else openCellCommand boardGame ((read [i])-1) jj
                                       where newBoardGame = (gameOverTest boardGame ((read [i])-1) jj)
                                             jj = (letterToNumber j)
 makeCommandInBoard _ boardGame = boardGame
@@ -284,9 +284,9 @@ openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGa
 
 markCellCommand :: Board -> Int -> Int -> Board
 markCellCommand boardGame i j = if ((markedPositions boardGame) < (numMines boardGame) && (stateCell $ getCell (matrixCell boardGame) i j) == Closed)
-	                            then replaceCell (addMarkPosition boardGame) newCell i j
-	                            else boardGame
-	                            where newCell = markCell $ getCell (matrixCell boardGame) i j
+                                then replaceCell (addMarkPosition boardGame) newCell i j
+                                else boardGame
+                                where newCell = markCell $ getCell (matrixCell boardGame) i j
 
 unmarkCellCommand :: Board -> Int -> Int -> Board
 unmarkCellCommand boardGame i j = replaceCell (removeMarkPosition boardGame) newCell i j 
@@ -339,7 +339,7 @@ replaceCell (Board (MatrixCell css) a b c d e f g) cell i j = Board (MatrixCell 
 
 gameOverTest :: Board -> Int -> Int -> Board
 gameOverTest (Board matrixCell m n stateGame a b c d) i j = if(isMine $ getCell matrixCell i j)
-                             then (Board matrixCell m n GameOver a b c d)
+                             then (Board (openAllMinesForShow matrixCell) m n GameOver a b c d)
                              else (Board matrixCell m n stateGame a b c d)
 
 -- () retorno void
@@ -351,46 +351,34 @@ winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPosi
 
 
 
--- openAllMinesForShow
+openAllMinesForShow :: MatrixCell -> MatrixCell
+openAllMinesForShow matrixCell = MatrixCell $ foldr appendRow [] [1..(length (cells matrixCell))]
+                                  where appendRow i acc = (foldr (appendCell i) [] [1..(length $ head (cells matrixCell))]) : acc
+                                        appendCell i j acc = (newCell i j) : acc
+                                        newCell i j = 
+                                        	if(isMine $ oldCell i j) 
+                                        	then forcedOpenCell $ oldCell i j
+                                        	else oldCell i j
+                                        oldCell i j = getCell matrixCell (i-1) (j-1)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+forcedOpenCell :: Cell -> Cell
+forcedOpenCell (Cell isMine stateCell count rowN) = Cell isMine Opened count rowN
 
 ----------------------------------------------------------------------
 --          INTERFACE GRAFICA
 ----------------------------------------------------------------------
----- EH ISSO QUE EU PRECISO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-updateWindow :: 
+-- sequence_ :: (Monad m, Foldable t) => t (m a) -> m ()
+-- tableNew :: Int -> Int -> Bool -> IO Table
+
+--updateWindow :: Board ->
+
+up :: Board -> IO()
+up boardGame = do
+    putStrLn "2"
+
+     
 
 concatToCellCharList :: MatrixCell -> [Char]
 concatToCellCharList (MatrixCell xss) = [cellToChar x | xs <- xss, x <- xs]
@@ -398,52 +386,54 @@ concatToCellCharList (MatrixCell xss) = [cellToChar x | xs <- xss, x <- xs]
 {-listOfCell :: MatrixCell -> [Char]
 listOfCell matrixCell = 
 -}
-
+    
 mainGraphicUI :: Board -> IO ()
 mainGraphicUI boardGame = do
-     initGUI
-     window <- windowNew
+    initGUI
+    window <- windowNew
 
-     --let m = (nRows boardGame)*5
-
-     set window [ windowTitle := "Campo Minado em Haskell", 
+    set window [ windowTitle := "Campo Minado em Haskell", 
                   windowDefaultWidth := ((nRows boardGame)*50), windowDefaultHeight := ((nColumns boardGame)*50+60)]
-     mb <- vBoxNew False 0
-     containerAdd window mb
-
-     info <- labelNew (Just "Press \"New\" for a random number")
-     boxPackStart mb info PackNatural 7
-     sep1 <- hSeparatorNew
-     boxPackStart mb sep1 PackNatural 7
      
-     scrwin <- scrolledWindowNew Nothing Nothing
-     boxPackStart mb scrwin PackGrow 0
+    mb <- vBoxNew False 0
+    containerAdd window mb
 
-     table <- tableNew (nRows boardGame) (nColumns boardGame) True
-     scrolledWindowAddWithViewport scrwin table
-
-     buttonlist <- sequence (map numButton $ concatToCellCharList $ matrixCell boardGame)--[1..(sizeBoard boardGame)])
-     let places = cross [0..(nRows boardGame)-1] [0..(nColumns boardGame)-1]
-     sequence_ (zipWith (attachButton table) buttonlist places)
-
-     sep2 <- hSeparatorNew
-     boxPackStart mb sep2 PackNatural 7
-     hb <- hBoxNew False 0
-     boxPackStart mb hb PackNatural 0
-     play <- buttonNewFromStock stockNew
-     quit <- buttonNewFromStock stockQuit
-     boxPackStart hb play PackNatural 0
-     boxPackEnd hb quit PackNatural 0
+    info <- labelNew (Just "Press \"New\" for a random number")
+    boxPackStart mb info PackNatural 7
+    sep1 <- hSeparatorNew
+    boxPackStart mb sep1 PackNatural 7
      
-     randstore <- newIORef 50
-     randomButton info randstore play
+    scrwin <- scrolledWindowNew Nothing Nothing
+    boxPackStart mb scrwin PackGrow 0
 
-     sequence_ (map (actionButton info randstore) buttonlist)
+    table <- tableNew (nRows boardGame) (nColumns boardGame) True
+    scrolledWindowAddWithViewport scrwin table
+     
+    buttonlist <- sequence (map numButton $ concatToCellCharList $ matrixCell boardGame)--[1..(sizeBoard boardGame)])
+    let places = cross [0..(nRows boardGame)-1] [0..(nColumns boardGame)-1]
+    sequence_ (zipWith (attachButton table) buttonlist places)
 
-     widgetShowAll window
-     onClicked quit (widgetDestroy window)
-     onDestroy window mainQuit
-     mainGUI
+    newButton <- numButton '+'
+    attachButton table newButton (1,1)
+
+    sep2 <- hSeparatorNew
+    boxPackStart mb sep2 PackNatural 7
+    hb <- hBoxNew False 0
+    boxPackStart mb hb PackNatural 0
+    play <- buttonNewFromStock stockNew
+    quit <- buttonNewFromStock stockQuit
+    boxPackStart hb play PackNatural 0
+    boxPackEnd hb quit PackNatural 0
+     
+    randstore <- newIORef 50
+    randomButton info randstore play
+
+    sequence_ (map (actionButton info randstore) buttonlist)
+
+    widgetShowAll window
+    onClicked quit (widgetDestroy window)
+    onDestroy window mainQuit
+    mainGUI
 
 numButton :: Char -> IO Button
 numButton c = do
