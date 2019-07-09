@@ -270,16 +270,23 @@ makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame ((read [i]
                                           where jj = (letterToNumber j)
 makeCommandInBoard ('-':j:i:"") boardGame = unmarkCellCommand boardGame ((read [i])-1) jj
                                           where jj = (letterToNumber j)
-makeCommandInBoard (j:i:"") boardGame = if(stateGame newBoardGame == GameOver )
-                                        then newBoardGame
-                                        else openCellCommand boardGame ((read [i])-1) jj
-                                      where newBoardGame = (gameOverTest boardGame ((read [i])-1) jj)
-                                            jj = (letterToNumber j)
+makeCommandInBoard (j:i:"") boardGame = openCellCommand boardGame ((read [i])-1) jj
+                                        where
+                                        jj = (letterToNumber j)
 makeCommandInBoard _ boardGame = boardGame
 
-openCellCommand :: Board -> Int -> Int -> Board
+{-openCellCommand :: Board -> Int -> Int -> Board
 openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
-                            where newCell = openCell $ getCell (matrixCell boardGame) i j
+                            where newCell = if(stateCell $ getCell (matrixCell boardGame) i j == Marked) then oldCell
+                                            else openCell $ oldCell i j
+                                  oldCell = getCell (matrixCell boardGame) i j-}
+
+openCellCommand :: Board -> Int -> Int -> Board
+openCellCommand boardGame i j = if((stateCell $ getCell (matrixCell boardGame) i j) == Marked) then boardGame
+                                else replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
+                            where newCell = openCell $ oldCell
+                                  oldCell = getCell (matrixCell boardGame) i j
+
 
 
 markCellCommand :: Board -> Int -> Int -> Board
@@ -364,6 +371,16 @@ openAllMinesForShow matrixCell = MatrixCell $ foldr appendRow [] [1..(length (ce
 
 forcedOpenCell :: Cell -> Cell
 forcedOpenCell (Cell isMine stateCell count rowN) = Cell isMine Opened count rowN
+
+
+
+
+
+
+
+
+
+
 
 ----------------------------------------------------------------------
 --          INTERFACE GRAFICA
