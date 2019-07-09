@@ -87,7 +87,7 @@ data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
 
 data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
 
-data MatrixCell = MatrixCell [[Cell]] --deriving(Show)
+data MatrixCell = MatrixCell {cells :: [[Cell]]} --deriving(Show)
 
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int, rowNumber :: Int} deriving(Show, Eq)
@@ -390,7 +390,14 @@ winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPosi
 ----------------------------------------------------------------------
 ---- EH ISSO QUE EU PRECISO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+updateWindow :: 
 
+concatToCellCharList :: MatrixCell -> [Char]
+concatToCellCharList (MatrixCell xss) = [cellToChar x | xs <- xss, x <- xs]
+
+{-listOfCell :: MatrixCell -> [Char]
+listOfCell matrixCell = 
+-}
 
 mainGraphicUI :: Board -> IO ()
 mainGraphicUI boardGame = do
@@ -415,8 +422,8 @@ mainGraphicUI boardGame = do
      table <- tableNew (nRows boardGame) (nColumns boardGame) True
      scrolledWindowAddWithViewport scrwin table
 
-     buttonlist <- sequence (map numButton [1..(sizeBoard boardGame)])
-     let places = cross [1..(nRows boardGame)] [1..(nColumns boardGame)]
+     buttonlist <- sequence (map numButton $ concatToCellCharList $ matrixCell boardGame)--[1..(sizeBoard boardGame)])
+     let places = cross [0..(nRows boardGame)-1] [0..(nColumns boardGame)-1]
      sequence_ (zipWith (attachButton table) buttonlist places)
 
      sep2 <- hSeparatorNew
@@ -431,16 +438,16 @@ mainGraphicUI boardGame = do
      randstore <- newIORef 50
      randomButton info randstore play
 
-     sequence_ (map (actionButton info randstore) buttonlist)  
+     sequence_ (map (actionButton info randstore) buttonlist)
 
      widgetShowAll window
      onClicked quit (widgetDestroy window)
      onDestroy window mainQuit
      mainGUI
 
-numButton :: Int -> IO Button
-numButton n = do
-        button <- buttonNewWithLabel (show n)
+numButton :: Char -> IO Button
+numButton c = do
+        button <- buttonNewWithLabel (show c)
         return button
 
 cross :: [Int] -> [Int] -> [(Int,Int)]
@@ -499,7 +506,7 @@ main10 = do
      table <- tableNew 10 10 True
      scrolledWindowAddWithViewport scrwin table
 
-     buttonlist <- sequence (map numButton [1..100])
+     buttonlist <- sequence (map numButtonOrig [1..100])--(take 100 $ repeat '*'))
      let places = cross [0..9] [0..9]
      sequence_ (zipWith (attachButton table) buttonlist places)
 
@@ -521,3 +528,9 @@ main10 = do
      onClicked quit (widgetDestroy window)
      onDestroy window mainQuit
      mainGUI
+
+
+numButtonOrig :: Int -> IO Button
+numButtonOrig c = do
+        button <- buttonNewWithLabel (show c)
+        return button
