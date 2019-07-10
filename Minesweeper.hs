@@ -3,54 +3,6 @@
 -- Vinícius Carlos de Oliveira
 -- 201635025
 
-
-{-
-import Control.Exception
-import System.IO
-import System.IO.Error
-import System.Process
-import Data.List
-import Data.Function
-import Data.Array
--}
-
-import Graphics.UI.Gtk -- gtk2hs
-import Data.IORef -- gtk2hs
-
-import Data.List
-
-import Data.Char(toUpper)
-
-import Foreign.Marshal.Unsafe
-
-import System.Random
-import Data.Array.IO
-import Control.Monad
-
---import System.Random (RandomGen)
-import Data.Char (intToDigit, isDigit)
---import Data.Set (Set, member)
-
-shuffle :: [a] -> IO [a]
-shuffle xs = do
-        ar <- newArray n xs
-        forM [1..n] $ \i -> do
-            j <- randomRIO (i,n)
-            vi <- readArray ar i
-            vj <- readArray ar j
-            writeArray ar j vi
-            return vj
-  where
-    n = length xs
-    newArray :: Int -> [a] -> IO (IOArray Int a)
-    newArray n xs =  newListArray (1,n) xs
-
-ioToA :: IO [a] -> [a]
-ioToA xs = unsafeLocalState xs
-
-member :: Eq a => a -> [a] -> Bool
-member x = maybe False (const True) . find (== x)
-
 -- References
 -- http://learnyouahaskell.com/making-our-own-types-and-typeclasses
 -- https://hackage.haskell.org/package/CheatSheet-1.11/src/CheatSheet.pdf
@@ -76,27 +28,53 @@ member x = maybe False (const True) . find (== x)
 -- http://www.muitovar.com/gtk2hs/chap6-1.html
 
 
-data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
 
-{-numMinesCalculate :: Dificulty -> Int -> Num
-numMinesCalculate dificulty numCells
-    | dificulty == Easy = (truncate (numCells*10*0.2))
-    | dificulty == Medium = (truncate (numCells*10*0.4))
-    | dificulty == Hard = (truncate (numCells*10*0.55))
--}
+import Graphics.UI.Gtk -- gtk2hs
+import Data.IORef -- gtk2hs
+import Data.List
+import Data.Char(toUpper)
+import Foreign.Marshal.Unsafe
+import System.Random
+import Data.Array.IO
+import Control.Monad
+
+import Data.Char (intToDigit, isDigit)
+
+shuffle :: [a] -> IO [a]
+shuffle xs = do
+        ar <- newArray n xs
+        forM [1..n] $ \i -> do
+            j <- randomRIO (i,n)
+            vi <- readArray ar i
+            vj <- readArray ar j
+            writeArray ar j vi
+            return vj
+  where
+    n = length xs
+    newArray :: Int -> [a] -> IO (IOArray Int a)
+    newArray n xs =  newListArray (1,n) xs
+
+ioToA :: IO [a] -> [a]
+ioToA xs = unsafeLocalState xs
+
+member :: Eq a => a -> [a] -> Bool
+member x = maybe False (const True) . find (== x)
+
+
+
+data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
 
 data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
 
 data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
 
-data MatrixCell = MatrixCell {cells :: [[Cell]]} --deriving(Show)
+data MatrixCell = MatrixCell {cells :: [[Cell]]}
 
 -- record syntax
 data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int, rowNumber :: Int} deriving(Show, Eq)
 
 data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
 
---data Matrix a = Matrix [[a]] deriving (Eq)
 
 getString :: String -> IO String
 getString str = do
@@ -107,7 +85,7 @@ getString str = do
 
 initBoardMinesweeper :: Int -> Int -> Int -> Board
 initBoardMinesweeper m n nMines = board
-                where board = Board cells m n InGame (m*n) nMines 0 0 --(truncate (m * n)) (truncate (m * n*0.4)) 0 0 -- Cell --[[State Closed]] 4 4
+                where board = Board cells m n InGame (m*n) nMines 0 0
                       cells = initCells m n nMines
 
 
@@ -147,14 +125,9 @@ cellToChar (Cell isMine stateCell neighborsMines _)
 
 showRow :: MatrixCell -> [Cell] -> String -> String
 showRow matrix (c:cs) s = s ++ show (rowNumber c) ++ "  " ++ showCells ++ "\n"
-                      where --rowNumber = "" ++ (rowNumber c) --[row $ position c]
+                      where
                             showCells = foldl showCell "" (c:cs)
                             showCell = \acc c -> acc ++ [cellToChar c] ++ " "
-
-{-printBoardMatrix :: Board -> IO()
-printBoardMatrix (Board matrixCell numRows numColumns _ _ _ _ _)
-    | numRows == 4 = putStrLn "Estamos indo bem"
-    | otherwise = putStrLn "bem mesmo"-}
 
 instance Show MatrixCell where
     show (MatrixCell matrix) = showRows ++ "   " ++ enumerate ++ "\n\n"
@@ -162,13 +135,6 @@ instance Show MatrixCell where
                                      enumerate = foldr (\x acc -> x:' ':acc) "\n" letters
                                      letters = take numberOfColumns ['A'..]
                                      numberOfColumns = length $ head matrix
-                                     --numbers = take numberOfRows ['1'..]
-                                     --numberOfRows = length matrix
-                                     --let numCol = 0
-                                     --numFirst = if(numFirst == "0") then "0" else sumChar numCol "1" --if(numFirst == "0")
-                                     --numCol = numFirst
-                                     --let numFirst = sumChar numFirst "1"
-                                     
 
 
 
@@ -176,32 +142,12 @@ incrementCharNumb :: [Char] -> [Char]
 incrementCharNumb "0" = "1"
 incrementCharNumb number = sumChar number "1"
 
-{-
-scanChar :: Char -> Int
-scanChar c | '0' <= c && c <= '9' = fromEnum c - fromEnum '0'
-           | otherwise = -1
-
-scanString :: String -> Int
-scanString x = if all isDigit x
-                then read x :: Int
-                else 0           
--}
 
 sumChar :: [Char] -> [Char] -> [Char]
 sumChar str1 str2 = show ((read str1::Int) + (read str2::Int))
 
 
 
-{---type Pos = (Int,Int)
-data Pos = Pos { row :: Int, column :: Int }
-
-pos :: Int -> Int -> Pos
-pos i j = (Pos i j)
-
-instance Show a => Show (Matrix a)
-  where
-    show (Matrix a) = intercalate "\n" $ map (intercalate " " . map show) a
--}
 
 main :: IO()
 main = do
@@ -308,11 +254,11 @@ modToChar x y = numberToLetter $ mod x y
 treatEntry :: String -> Board -> Board
 treatEntry (op:j:i:rest:"") boardGame = if(op /= '+' && op /= '-')
                                        then boardGame
-                                     else if(toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare && rest >= '0' && rest <= rest_compare)
+                                     else if((op == '+' || op == '-') && toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare && rest >= '0' && rest <= rest_compare)
                                        then makeCommandInBoard str boardGame
                                      else boardGame
                                         where str = [op,j,i,rest]
-                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)::Char
                                               i_compare = divToChar (nRows boardGame) 10
                                               rest_compare = modToChar (nRows boardGame) 10
 
@@ -325,9 +271,8 @@ treatEntry (op:j:i:"") boardGame = if((op == '+' || op == '-') && toUpper j >= '
                                               jj = op
                                               ii = j
                                               rest = i
-                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                              j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)::Char
                                               i_compare = if((op == '+' || op == '-') && (nRows boardGame) <= 9) then intToDigit (nRows boardGame) --if(intToDigit (nRows boardGame) <= '9') intToDigit (nRows boardGame)
-                                                          else if ((op == '+' || op == '-') && (nRows boardGame) <= 9) then intToDigit (nRows boardGame)
                                                           else if ((op == '+' || op == '-') && (nRows boardGame) > 9) then '9'
                                                           else if((nRows boardGame) <= 9) then intToDigit (nRows boardGame)
                                                           else divToChar (nRows boardGame) 10
@@ -336,17 +281,11 @@ treatEntry (op:j:i:"") boardGame = if((op == '+' || op == '-') && toUpper j >= '
 treatEntry (j:i:"") boardGame = if(toUpper j >= 'A' && toUpper j <= j_compare && i >= '1' && i <= i_compare)
                                   then makeCommandInBoard [j,i] boardGame
                                 else boardGame
-                                  where j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)
+                                  where j_compare = toEnum (read [(divToChar (nColumns boardGame+64) 10), (modToChar (nColumns boardGame+64) 10)]::Int)::Char
                                         i_compare = if((nRows boardGame) <= 9) then intToDigit (nRows boardGame)
                                                     else '9'
 treatEntry _ boardGame = boardGame
 
-
--- putStrLn "j " ++ show j_compare ++ " i " ++ show i_compare ++ " rest " ++ show rest_compare
-
-{-if((length str > 4) || (length str < 2))
-	                         then boardGame
-	                       else makeCommandInBoard str boardGame-}
 
 -- Trocar string para a 
 makeCommandInBoard :: String -> Board -> Board
