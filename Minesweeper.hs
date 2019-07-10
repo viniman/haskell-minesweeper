@@ -37,8 +37,19 @@ import Foreign.Marshal.Unsafe
 import System.Random
 import Data.Array.IO
 import Control.Monad
-
 import Data.Char (intToDigit, isDigit)
+
+
+-- Estados do game
+data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
+data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
+
+-- Estruturas do game em record syntax
+data MatrixCell = MatrixCell {cells :: [[Cell]]}
+data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int, rowNumber :: Int} deriving(Show, Eq)
+data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
+
+
 
 shuffle :: [a] -> IO [a]
 shuffle xs = do
@@ -59,22 +70,6 @@ ioToA xs = unsafeLocalState xs
 
 member :: Eq a => a -> [a] -> Bool
 member x = maybe False (const True) . find (== x)
-
-
-
-data Dificulty = Easy | Medium | Hard deriving (Eq, Ord, Show, Read, Bounded, Enum)  
-
-data StateCell = Closed | Opened | Marked deriving(Enum, Eq, Show)
-
-data StateGame = Win | GameOver | InGame deriving(Enum, Eq, Show)
-
-data MatrixCell = MatrixCell {cells :: [[Cell]]}
-
--- record syntax
-data Cell = Cell {isMine :: Bool, stateCell :: StateCell, countNeighborhoodMines :: Int, rowNumber :: Int} deriving(Show, Eq)
-
-data Board = Board {matrixCell :: MatrixCell, nRows :: Int, nColumns :: Int, stateGame :: StateGame, sizeBoard :: Int, numMines :: Int, openedCells :: Int, markedPositions :: Int} deriving(Show)
-
 
 getString :: String -> IO String
 getString str = do
@@ -147,6 +142,17 @@ sumChar :: [Char] -> [Char] -> [Char]
 sumChar str1 str2 = show ((read str1::Int) + (read str2::Int))
 
 
+--validateNumIntoChar :: String -> Bool
+
+--validatePosition :: Board -> Int -> Int
+
+-- validateChoiceRowReader :: Int
+-- validateChoiceRowReader = if (choice >= 2 && choice <= 99) then choice
+-- 						  else validateChoiceRowReader
+-- 						  where choice = read (ioToA (getString "\nInforme o numero de linhas do jogo (entre 2 e 99): "))::Int
+						  	       
+
+
 
 
 main :: IO()
@@ -160,8 +166,8 @@ main = do
     putStrLn "Campo Minado ------------------------------------------------------ Campo Minado"
     putStrLn "---------------- Campo Minado -------------------- Campo Minado ----------------\n"
 
-    m <- getString "Informe o numero de linhas do jogo: "
-    let numRows = read m::Int
+    m <- getString "Informe o numero de linhas do jogo (entre 2 e 99): "--validateChoiceRowReader
+    let numRows = read m::Int -- validateChoiceRowReader
 
     n <- getString "Informe o numero de colunas do jogo: "
     let numCols = read n::Int
@@ -170,7 +176,7 @@ main = do
     mn <- getString $ "Informe o numero de minas (deve ser entre 1 e " ++ show (quot maxNumberMines 2 ) ++ "): "
     let numMines = read mn::Int
 
-    let boardGame = initBoardMinesweeper numRows numCols numMines  --round m*n*0.4 --$ truncate (m*n*0.4)
+    let boardGame = initBoardMinesweeper numRows numCols numMines
 
 
     putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
@@ -181,14 +187,17 @@ main = do
     putStrLn "     - Para abrir posição da linha 2 coluna 0, informe \'20\'\n\n"
     putStrLn "--------------------------------- Campo Minado ---------------------------------\n"
 
-    if(False)
-        then (do mainGraphicUI boardGame
-                 --main10
-            )
-        else (do 
-            putStrLn $ show (matrixCell boardGame)
-            runGame boardGame
-            )
+
+    option <- getString "Você deseja entrar na Interface Gráfica (GUI)?  (y/n) "
+
+    if(option=="y" || option=="yes" || option=="s")
+    then mainGraphicUI boardGame
+    else (do
+    	  putStrLn "\n\n--------------------------------- Campo Minado ---------------------------------\n"
+          putStrLn $ show (matrixCell boardGame)
+          runGame boardGame
+    	 )
+
     return ()
 
 
@@ -218,10 +227,6 @@ runGame boardGame = do
             )
         else
             runGame newBoardGame
-
---validateNumIntoChar :: String -> Bool
-
---validatePosition :: Board -> Int -> Int
 
 
 -- Função que converte um Int de 0 a 9 para Char
@@ -287,7 +292,6 @@ treatEntry (j:i:"") boardGame = if(toUpper j >= 'A' && toUpper j <= j_compare &&
 treatEntry _ boardGame = boardGame
 
 
--- Trocar string para a 
 makeCommandInBoard :: String -> Board -> Board
 makeCommandInBoard ('+':j:i:"") boardGame = markCellCommand boardGame ((read [i])-1) jj
                                           where jj = (letterToNumberPos j)
@@ -302,13 +306,6 @@ makeCommandInBoard (j:i:rest:"") boardGame = openCellCommand boardGame ((read [i
 makeCommandInBoard (j:i:"") boardGame = openCellCommand boardGame ((read [i])-1) jj
                                           where jj = (letterToNumberPos j)
 makeCommandInBoard _ boardGame = boardGame
-
-{-openCellCommand :: Board -> Int -> Int -> Board
-openCellCommand boardGame i j = replaceCell (addOpenedCell (gameOverTest boardGame i j)) newCell i j
-                            where newCell = if(stateCell $ getCell (matrixCell boardGame) i j == Marked) then oldCell
-                                            else openCell $ oldCell i j
-                                  oldCell = getCell (matrixCell boardGame) i j-}
-
 
 
 openCellCommand :: Board -> Int -> Int -> Board
@@ -370,7 +367,7 @@ getMatrixCells (Board matrixCell _ _ _ _ _ _ _) = matrixCell
 
 replaceCellInRow :: [Cell] -> Cell -> Int -> [Cell]
 replaceCellInRow cs c j = (take columnIndex cs) ++ (c : drop (columnIndex + 1) cs)
-                        where columnIndex = j--charToColumn $ column (position c)
+                        where columnIndex = j
 
 replaceCell :: Board -> Cell -> Int -> Int -> Board
 replaceCell (Board (MatrixCell css) a b c d e f g) cell i j = Board (MatrixCell $ (take i css) ++ (newRow : (drop (i + 1) css))) a b c d e f g
@@ -382,13 +379,11 @@ gameOverTest (Board matrixCell m n stateGame a b c d) i j = if(isMine $ getCell 
                              then (Board (openAllMinesForShow matrixCell) m n GameOver a b c d)
                              else (Board matrixCell m n stateGame a b c d)
 
--- () retorno void
 winGameTest :: Board -> Board
 winGameTest (Board cells m n stateCell sizeBoard numMines openedCells markedPositions) = 
     if (openedCells+numMines == sizeBoard) 
     then Board cells m n Win sizeBoard numMines openedCells markedPositions
     else Board cells m n stateCell sizeBoard numMines openedCells markedPositions
-
 
 
 openAllMinesForShow :: MatrixCell -> MatrixCell
@@ -448,7 +443,7 @@ mainGraphicUI boardGame = do
     mb <- vBoxNew False 0
     containerAdd window mb
 
-    info <- labelNew (Just "Press \"New\" for a random number")
+    info <- labelNew (Just "Pressione \"New\" para reiniciar o jogo")
     boxPackStart mb info PackNatural 7
     sep1 <- hSeparatorNew
     boxPackStart mb sep1 PackNatural 7
@@ -519,58 +514,3 @@ randomButton inf rst b =
                      writeIORef rst rand  
                      set inf [labelLabel := "Ready"]
                      widgetModifyFg inf StateNormal (Color 0 0 65535)
-
-
-
-
-
-
-
-main10 :: IO ()
-main10 = do
-     initGUI
-     window <- windowNew
-     set window [ windowTitle := "Guess a Number", 
-                  windowDefaultWidth := 500, windowDefaultHeight := 500]
-     mb <- vBoxNew False 0
-     containerAdd window mb
-
-     info <- labelNew (Just "Press \"New\" for a random number")
-     boxPackStart mb info PackNatural 7
-     sep1 <- hSeparatorNew
-     boxPackStart mb sep1 PackNatural 7
-     
-     scrwin <- scrolledWindowNew Nothing Nothing
-     boxPackStart mb scrwin PackGrow 0
-
-     table <- tableNew 10 10 True
-     scrolledWindowAddWithViewport scrwin table
-
-     buttonlist <- sequence (map numButtonOrig [1..100])--(take 100 $ repeat '*'))
-     let places = cross [0..9] [0..9]
-     sequence_ (zipWith (attachButton table) buttonlist places)
-
-     sep2 <- hSeparatorNew
-     boxPackStart mb sep2 PackNatural 7
-     hb <- hBoxNew False 0
-     boxPackStart mb hb PackNatural 0
-     play <- buttonNewFromStock stockNew
-     quit <- buttonNewFromStock stockQuit
-     boxPackStart hb play PackNatural 0
-     boxPackEnd hb quit PackNatural 0
-     
-     randstore <- newIORef 50
-     randomButton info randstore play
-
-     sequence_ (map (actionButton info randstore) buttonlist)  
-
-     widgetShowAll window
-     onClicked quit (widgetDestroy window)
-     onDestroy window mainQuit
-     mainGUI
-
-
-numButtonOrig :: Int -> IO Button
-numButtonOrig c = do
-        button <- buttonNewWithLabel (show c)
-        return button
